@@ -1,7 +1,13 @@
 .env
 venv/
+.venv/
 node_modules/
 dist/
 __pycache__/
 .vite/
 *.pyc
+
+# Raw Kaggle dataset files — large, not needed in version control.
+# Place these manually under data/datasets/ before running the eval script.
+data/datasets/resumes.csv
+data/datasets/jobs.csv

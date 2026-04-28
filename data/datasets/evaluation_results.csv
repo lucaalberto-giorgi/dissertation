@@ -1,0 +1,101 @@
+cv_identifier,job_title,semantic_score,keyword_score,final_score,match_level,matching_skills,missing_skills,short_explanation
+Abiral_Pandey_Fullstack_Java,Data Analyst,0.697,0.0,0.488,Weak match,[],['python'],The CV shows limited keyword overlap with the job description.
+Abiral_Pandey_Fullstack_Java,Data Reporting Analyst,0.718,0.0,0.503,Weak match,[],['python'],The CV shows limited keyword overlap with the job description.
+Abiral_Pandey_Fullstack_Java,Data Analyst (Power BI/Python),0.742,0.0,0.519,Weak match,[],['python'],The CV shows limited keyword overlap with the job description.
+Abiral_Pandey_Fullstack_Java,Data & Reporting Analyst,0.713,0.0,0.75,Weak match,[],[],The CV shows limited keyword overlap with the job description.
+Abiral_Pandey_Fullstack_Java,Data Quality Analyst (Remote Opportunity),0.741,0.0,0.75,Weak match,[],[],The CV shows limited keyword overlap with the job description.
+Abiral_Pandey_Fullstack_Java,Data Analyst,0.731,0.0,0.75,Weak match,[],[],The CV shows limited keyword overlap with the job description.
+Abiral_Pandey_Fullstack_Java,"Data Reporting Analyst- (***YORK, PA***)",0.714,0.0,0.75,Weak match,[],[],The CV shows limited keyword overlap with the job description.
+Abiral_Pandey_Fullstack_Java,Product Data Analyst,0.678,0.0,0.475,Weak match,[],['python'],The CV shows limited keyword overlap with the job description.
+Abiral_Pandey_Fullstack_Java,Technical Data Analyst,0.709,0.0,0.496,Weak match,[],['python'],The CV shows limited keyword overlap with the job description.
+Abiral_Pandey_Fullstack_Java,Data Integration Analyst,0.76,1.0,0.882,Strong match,['aws'],[],The CV covers the main skills requested in the job description.
+Achyuth Resume_8,Data Analyst,0.71,1.0,0.847,Strong match,['python'],[],The CV covers the main skills requested in the job description.
+Achyuth Resume_8,Data Reporting Analyst,0.747,1.0,0.873,Strong match,['python'],[],The CV covers the main skills requested in the job description.
+Achyuth Resume_8,Data Analyst (Power BI/Python),0.75,1.0,0.875,Strong match,['python'],[],The CV covers the main skills requested in the job description.
+Achyuth Resume_8,Data & Reporting Analyst,0.75,0.0,0.75,Weak match,[],[],The CV shows limited keyword overlap with the job description.
+Achyuth Resume_8,Data Quality Analyst (Remote Opportunity),0.758,0.0,0.75,Weak match,[],[],The CV shows limited keyword overlap with the job description.
+Achyuth Resume_8,Data Analyst,0.752,0.0,0.75,Weak match,[],[],The CV shows limited keyword overlap with the job description.
+Achyuth Resume_8,"Data Reporting Analyst- (***YORK, PA***)",0.733,0.0,0.75,Weak match,[],[],The CV shows limited keyword overlap with the job description.
+Achyuth Resume_8,Product Data Analyst,0.702,1.0,0.841,Strong match,['python'],[],The CV covers the main skills requested in the job description.
+Achyuth Resume_8,Technical Data Analyst,0.731,1.0,0.862,Strong match,['python'],[],The CV covers the main skills requested in the job description.
+Achyuth Resume_8,Data Integration Analyst,0.785,1.0,0.899,Strong match,['aws'],[],The CV covers the main skills requested in the job description.
+Adelina_Erimia_PMP1,Data Analyst,0.685,0.0,0.479,Weak match,[],['python'],The CV shows limited keyword overlap with the job description.
+Adelina_Erimia_PMP1,Data Reporting Analyst,0.716,0.0,0.501,Weak match,[],['python'],The CV shows limited keyword overlap with the job description.
+Adelina_Erimia_PMP1,Data Analyst (Power BI/Python),0.784,0.0,0.549,Weak match,[],['python'],The CV shows limited keyword overlap with the job description.
+Adelina_Erimia_PMP1,Data & Reporting Analyst,0.731,0.0,0.75,Weak match,[],[],The CV shows limited keyword overlap with the job description.
+Adelina_Erimia_PMP1,Data Quality Analyst (Remote Opportunity),0.721,0.0,0.75,Weak match,[],[],The CV shows limited keyword overlap with the job description.
+Adelina_Erimia_PMP1,Data Analyst,0.729,0.0,0.75,Weak match,[],[],The CV shows limited keyword overlap with the job description.
+Adelina_Erimia_PMP1,"Data Reporting Analyst- (***YORK, PA***)",0.704,0.0,0.75,Weak match,[],[],The CV shows limited keyword overlap with the job description.
+Adelina_Erimia_PMP1,Product Data Analyst,0.69,0.0,0.483,Weak match,[],['python'],The CV shows limited keyword overlap with the job description.
+Adelina_Erimia_PMP1,Technical Data Analyst,0.724,0.0,0.507,Weak match,[],['python'],The CV shows limited keyword overlap with the job description.
+Adelina_Erimia_PMP1,Data Integration Analyst,0.74,0.0,0.518,Weak match,[],['aws'],The CV shows limited keyword overlap with the job description.
+Adhi Gopalam - SM,Data Analyst,0.716,0.0,0.501,Weak match,[],['python'],The CV shows limited keyword overlap with the job description.
+Adhi Gopalam - SM,Data Reporting Analyst,0.752,0.0,0.526,Weak match,[],['python'],The CV shows limited keyword overlap with the job description.
+Adhi Gopalam - SM,Data Analyst (Power BI/Python),0.795,0.0,0.556,Weak match,[],['python'],The CV shows limited keyword overlap with the job description.
+Adhi Gopalam - SM,Data & Reporting Analyst,0.76,0.0,0.75,Weak match,[],[],The CV shows limited keyword overlap with the job description.
+Adhi Gopalam - SM,Data Quality Analyst (Remote Opportunity),0.788,0.0,0.75,Weak match,[],[],The CV shows limited keyword overlap with the job description.
+Adhi Gopalam - SM,Data Analyst,0.792,0.0,0.75,Weak match,[],[],The CV shows limited keyword overlap with the job description.
+Adhi Gopalam - SM,"Data Reporting Analyst- (***YORK, PA***)",0.74,0.0,0.75,Weak match,[],[],The CV shows limited keyword overlap with the job description.
+Adhi Gopalam - SM,Product Data Analyst,0.725,0.0,0.507,Weak match,[],['python'],The CV shows limited keyword overlap with the job description.
+Adhi Gopalam - SM,Technical Data Analyst,0.783,0.0,0.548,Weak match,[],['python'],The CV shows limited keyword overlap with the job description.
+Adhi Gopalam - SM,Data Integration Analyst,0.793,0.0,0.555,Weak match,[],['aws'],The CV shows limited keyword overlap with the job description.
+AjayKumar,Data Analyst,0.702,0.0,0.491,Weak match,[],['python'],The CV shows limited keyword overlap with the job description.
+AjayKumar,Data Reporting Analyst,0.746,0.0,0.522,Weak match,[],['python'],The CV shows limited keyword overlap with the job description.
+AjayKumar,Data Analyst (Power BI/Python),0.784,0.0,0.549,Weak match,[],['python'],The CV shows limited keyword overlap with the job description.
+AjayKumar,Data & Reporting Analyst,0.748,0.0,0.75,Weak match,[],[],The CV shows limited keyword overlap with the job description.
+AjayKumar,Data Quality Analyst (Remote Opportunity),0.772,0.0,0.75,Weak match,[],[],The CV shows limited keyword overlap with the job description.
+AjayKumar,Data Analyst,0.786,0.0,0.75,Weak match,[],[],The CV shows limited keyword overlap with the job description.
+AjayKumar,"Data Reporting Analyst- (***YORK, PA***)",0.735,0.0,0.75,Weak match,[],[],The CV shows limited keyword overlap with the job description.
+AjayKumar,Product Data Analyst,0.708,0.0,0.496,Weak match,[],['python'],The CV shows limited keyword overlap with the job description.
+AjayKumar,Technical Data Analyst,0.758,0.0,0.531,Weak match,[],['python'],The CV shows limited keyword overlap with the job description.
+AjayKumar,Data Integration Analyst,0.773,0.0,0.541,Weak match,[],['aws'],The CV shows limited keyword overlap with the job description.
+Akhil.profile,Data Analyst,0.713,0.0,0.499,Weak match,[],['python'],The CV shows limited keyword overlap with the job description.
+Akhil.profile,Data Reporting Analyst,0.757,0.0,0.53,Weak match,[],['python'],The CV shows limited keyword overlap with the job description.
+Akhil.profile,Data Analyst (Power BI/Python),0.794,0.0,0.556,Weak match,[],['python'],The CV shows limited keyword overlap with the job description.
+Akhil.profile,Data & Reporting Analyst,0.756,0.0,0.75,Weak match,[],[],The CV shows limited keyword overlap with the job description.
+Akhil.profile,Data Quality Analyst (Remote Opportunity),0.762,0.0,0.75,Weak match,[],[],The CV shows limited keyword overlap with the job description.
+Akhil.profile,Data Analyst,0.79,0.0,0.75,Weak match,[],[],The CV shows limited keyword overlap with the job description.
+Akhil.profile,"Data Reporting Analyst- (***YORK, PA***)",0.734,0.0,0.75,Weak match,[],[],The CV shows limited keyword overlap with the job description.
+Akhil.profile,Product Data Analyst,0.72,0.0,0.504,Weak match,[],['python'],The CV shows limited keyword overlap with the job description.
+Akhil.profile,Technical Data Analyst,0.766,0.0,0.536,Weak match,[],['python'],The CV shows limited keyword overlap with the job description.
+Akhil.profile,Data Integration Analyst,0.791,0.0,0.554,Weak match,[],['aws'],The CV shows limited keyword overlap with the job description.
+Akhil_Sr BSA,Data Analyst,0.714,0.0,0.5,Weak match,[],['python'],The CV shows limited keyword overlap with the job description.
+Akhil_Sr BSA,Data Reporting Analyst,0.758,0.0,0.531,Weak match,[],['python'],The CV shows limited keyword overlap with the job description.
+Akhil_Sr BSA,Data Analyst (Power BI/Python),0.794,0.0,0.556,Weak match,[],['python'],The CV shows limited keyword overlap with the job description.
+Akhil_Sr BSA,Data & Reporting Analyst,0.758,0.0,0.75,Weak match,[],[],The CV shows limited keyword overlap with the job description.
+Akhil_Sr BSA,Data Quality Analyst (Remote Opportunity),0.764,0.0,0.75,Weak match,[],[],The CV shows limited keyword overlap with the job description.
+Akhil_Sr BSA,Data Analyst,0.791,0.0,0.75,Weak match,[],[],The CV shows limited keyword overlap with the job description.
+Akhil_Sr BSA,"Data Reporting Analyst- (***YORK, PA***)",0.734,0.0,0.75,Weak match,[],[],The CV shows limited keyword overlap with the job description.
+Akhil_Sr BSA,Product Data Analyst,0.721,0.0,0.505,Weak match,[],['python'],The CV shows limited keyword overlap with the job description.
+Akhil_Sr BSA,Technical Data Analyst,0.766,0.0,0.536,Weak match,[],['python'],The CV shows limited keyword overlap with the job description.
+Akhil_Sr BSA,Data Integration Analyst,0.791,0.0,0.554,Weak match,[],['aws'],The CV shows limited keyword overlap with the job description.
+Alekhya Resume,Data Analyst,0.688,0.0,0.482,Weak match,[],['python'],The CV shows limited keyword overlap with the job description.
+Alekhya Resume,Data Reporting Analyst,0.724,0.0,0.507,Weak match,[],['python'],The CV shows limited keyword overlap with the job description.
+Alekhya Resume,Data Analyst (Power BI/Python),0.748,0.0,0.524,Weak match,[],['python'],The CV shows limited keyword overlap with the job description.
+Alekhya Resume,Data & Reporting Analyst,0.734,0.0,0.75,Weak match,[],[],The CV shows limited keyword overlap with the job description.
+Alekhya Resume,Data Quality Analyst (Remote Opportunity),0.744,0.0,0.75,Weak match,[],[],The CV shows limited keyword overlap with the job description.
+Alekhya Resume,Data Analyst,0.749,0.0,0.75,Weak match,[],[],The CV shows limited keyword overlap with the job description.
+Alekhya Resume,"Data Reporting Analyst- (***YORK, PA***)",0.71,0.0,0.75,Weak match,[],[],The CV shows limited keyword overlap with the job description.
+Alekhya Resume,Product Data Analyst,0.695,0.0,0.486,Weak match,[],['python'],The CV shows limited keyword overlap with the job description.
+Alekhya Resume,Technical Data Analyst,0.73,0.0,0.511,Weak match,[],['python'],The CV shows limited keyword overlap with the job description.
+Alekhya Resume,Data Integration Analyst,0.776,1.0,0.893,Strong match,['aws'],[],The CV covers the main skills requested in the job description.
+Amar Sr BSA,Data Analyst,0.716,0.0,0.501,Weak match,[],['python'],The CV shows limited keyword overlap with the job description.
+Amar Sr BSA,Data Reporting Analyst,0.767,0.0,0.537,Weak match,[],['python'],The CV shows limited keyword overlap with the job description.
+Amar Sr BSA,Data Analyst (Power BI/Python),0.786,0.0,0.55,Weak match,[],['python'],The CV shows limited keyword overlap with the job description.
+Amar Sr BSA,Data & Reporting Analyst,0.754,0.0,0.75,Weak match,[],[],The CV shows limited keyword overlap with the job description.
+Amar Sr BSA,Data Quality Analyst (Remote Opportunity),0.77,0.0,0.75,Weak match,[],[],The CV shows limited keyword overlap with the job description.
+Amar Sr BSA,Data Analyst,0.78,0.0,0.75,Weak match,[],[],The CV shows limited keyword overlap with the job description.
+Amar Sr BSA,"Data Reporting Analyst- (***YORK, PA***)",0.739,0.0,0.75,Weak match,[],[],The CV shows limited keyword overlap with the job description.
+Amar Sr BSA,Product Data Analyst,0.717,0.0,0.502,Weak match,[],['python'],The CV shows limited keyword overlap with the job description.
+Amar Sr BSA,Technical Data Analyst,0.774,0.0,0.542,Weak match,[],['python'],The CV shows limited keyword overlap with the job description.
+Amar Sr BSA,Data Integration Analyst,0.789,1.0,0.902,Strong match,['aws'],[],The CV covers the main skills requested in the job description.
+Ami Jape,Data Analyst,0.691,0.0,0.484,Weak match,[],['python'],The CV shows limited keyword overlap with the job description.
+Ami Jape,Data Reporting Analyst,0.713,0.0,0.499,Weak match,[],['python'],The CV shows limited keyword overlap with the job description.
+Ami Jape,Data Analyst (Power BI/Python),0.744,0.0,0.521,Weak match,[],['python'],The CV shows limited keyword overlap with the job description.
+Ami Jape,Data & Reporting Analyst,0.742,0.0,0.75,Weak match,[],[],The CV shows limited keyword overlap with the job description.
+Ami Jape,Data Quality Analyst (Remote Opportunity),0.709,0.0,0.75,Weak match,[],[],The CV shows limited keyword overlap with the job description.
+Ami Jape,Data Analyst,0.738,0.0,0.75,Weak match,[],[],The CV shows limited keyword overlap with the job description.
+Ami Jape,"Data Reporting Analyst- (***YORK, PA***)",0.716,0.0,0.75,Weak match,[],[],The CV shows limited keyword overlap with the job description.
+Ami Jape,Product Data Analyst,0.74,0.0,0.518,Weak match,[],['python'],The CV shows limited keyword overlap with the job description.
+Ami Jape,Technical Data Analyst,0.695,0.0,0.486,Weak match,[],['python'],The CV shows limited keyword overlap with the job description.
+Ami Jape,Data Integration Analyst,0.74,0.0,0.518,Weak match,[],['aws'],The CV shows limited keyword overlap with the job description.

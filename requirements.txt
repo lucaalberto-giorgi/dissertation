@@ -6,3 +6,6 @@ numpy
 pypdf
 python-multipart
 supabase
+pandas
+requests
+tqdm
