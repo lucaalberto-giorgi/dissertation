@@ -12,6 +12,8 @@ from openai import OpenAI
 from pypdf import PdfReader
 from pydantic import BaseModel, Field
 
+from db import save_match_record
+
 
 # Load values from the local .env file.
 load_dotenv()
@@ -514,6 +516,24 @@ def match_cv_to_job(payload: MatchRequest) -> MatchResponse:
             explanation.matching_skills,
         )
         score_interpretation = get_score_interpretation(final_score)
+
+        # Persist the match result. save_match_record swallows its own
+        # errors and returns None on failure, so the response below is
+        # always returned even if the database is unavailable.
+        print("[DB DEBUG] Calling save_match_record")
+        save_match_record(
+            cv_text=cv_text,
+            job_description=job_description,
+            anonymized_cv=anonymized_cv,
+            semantic_score=semantic_score,
+            keyword_score=keyword_score,
+            final_score=final_score,
+            match_level=match_level,
+            score_interpretation=score_interpretation,
+            matching_skills=explanation.matching_skills,
+            missing_skills=explanation.missing_skills,
+            short_explanation=explanation.short_explanation,
+        )
 
         return MatchResponse(
             semantic_score=semantic_score,
