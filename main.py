@@ -7,7 +7,7 @@ import numpy as np
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from openai import OpenAI
 from pypdf import PdfReader
 from pydantic import BaseModel, Field
@@ -614,7 +614,7 @@ def get_saved_matches(limit: int = 50) -> list[SavedMatchResponse]:
 
 
 @app.delete("/matches/{record_id}", status_code=204)
-def delete_saved_match(record_id: str) -> JSONResponse:
+def delete_saved_match(record_id: str) -> Response:
     """
     Delete a single saved match record by primary key.
 
@@ -635,4 +635,9 @@ def delete_saved_match(record_id: str) -> JSONResponse:
             detail=f"No match record found with id={record_id}",
         )
 
-    return JSONResponse(status_code=204, content=None)
+    # 204 No Content must have an empty body. JSONResponse(content=None)
+    # serializes to the 4-byte literal "null", which violates RFC 7230
+    # for 204 responses and causes Starlette to log an ASGI exception
+    # after the response is sent. A bare Response with no body is the
+    # correct shape here.
+    return Response(status_code=204)
