@@ -1,4 +1,19 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+const API_BASE_URL = "http://127.0.0.1:8000";
+
+function formatSavedDate(rawDate) {
+  if (!rawDate) {
+    return "Unknown date";
+  }
+
+  const parsed = new Date(rawDate);
+  if (Number.isNaN(parsed.getTime())) {
+    return rawDate;
+  }
+
+  return parsed.toLocaleString();
+}
 
 const initialResult = null;
 
@@ -175,11 +190,110 @@ function App() {
   const [uploadingPdf, setUploadingPdf] = useState(false);
   const [cvPreviewMode, setCvPreviewMode] = useState(false);
   const [jobPreviewMode, setJobPreviewMode] = useState(false);
+  const [savedMatches, setSavedMatches] = useState([]);
+  const [savedMatchesLoading, setSavedMatchesLoading] = useState(false);
+  const [savedMatchesError, setSavedMatchesError] = useState("");
+  const [deletingMatchId, setDeletingMatchId] = useState(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState(null);
   const canRunMatch =
     Boolean(cvText.trim()) &&
     Boolean(jobDescription.trim()) &&
     !loading &&
     !uploadingPdf;
+
+  async function loadSavedMatches() {
+    setSavedMatchesLoading(true);
+    setSavedMatchesError("");
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/matches?limit=5`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || "Failed to load saved matches.");
+      }
+
+      setSavedMatches(Array.isArray(data) ? data : []);
+    } catch (loadError) {
+      setSavedMatchesError(
+        loadError.message || "Failed to load saved matches."
+      );
+      setSavedMatches([]);
+    } finally {
+      setSavedMatchesLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadSavedMatches();
+  }, []);
+
+  function requestDeleteMatch(matchId) {
+    if (matchId === null || matchId === undefined || matchId === "") {
+      return;
+    }
+    setPendingDeleteId(matchId);
+  }
+
+  function cancelDeleteMatch() {
+    if (deletingMatchId !== null) {
+      return;
+    }
+    setPendingDeleteId(null);
+  }
+
+  async function confirmDeleteMatch() {
+    const matchId = pendingDeleteId;
+    if (matchId === null || matchId === undefined || matchId === "") {
+      return;
+    }
+
+    setDeletingMatchId(matchId);
+    setSavedMatchesError("");
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/matches/${matchId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok && response.status !== 204) {
+        let detailMessage = "Failed to delete the saved match.";
+        try {
+          const errorData = await response.json();
+          if (errorData?.detail) {
+            detailMessage = errorData.detail;
+          }
+        } catch (parseError) {
+          // Response had no JSON body; keep default detailMessage.
+        }
+        throw new Error(detailMessage);
+      }
+
+      await loadSavedMatches();
+      setPendingDeleteId(null);
+    } catch (deleteError) {
+      setSavedMatchesError(
+        deleteError.message || "Failed to delete the saved match."
+      );
+    } finally {
+      setDeletingMatchId(null);
+    }
+  }
+
+  useEffect(() => {
+    if (pendingDeleteId === null) {
+      return undefined;
+    }
+
+    function handleKeyDown(event) {
+      if (event.key === "Escape" && deletingMatchId === null) {
+        setPendingDeleteId(null);
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [pendingDeleteId, deletingMatchId]);
 
   function handleCvTextChange(event) {
     const nextText = event.target.value;
@@ -231,7 +345,7 @@ function App() {
     setUploadingPdf(true);
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/extract-cv-pdf", {
+      const response = await fetch(`${API_BASE_URL}/extract-cv-pdf`, {
         method: "POST",
         body: formData,
       });
@@ -270,7 +384,7 @@ function App() {
     setResult(initialResult);
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/match", {
+      const response = await fetch(`${API_BASE_URL}/match`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -288,6 +402,7 @@ function App() {
       }
 
       setResult(data);
+      loadSavedMatches();
     } catch (requestError) {
       setError(
         requestError.message ||
@@ -545,7 +660,125 @@ function App() {
             </div>
           </section>
         )}
+
+        <section className="card saved-matches-card">
+          <div className="saved-matches-header">
+            <div>
+              <p className="section-label">Saved Matches</p>
+              <h2>Match History</h2>
+              <p className="results-intro">
+                Showing the 5 most recent saved matches. The full CV and job
+                description are never returned to the browser.
+              </p>
+            </div>
+            <button
+              className="preview-edit-button"
+              type="button"
+              onClick={loadSavedMatches}
+              disabled={savedMatchesLoading}
+            >
+              {savedMatchesLoading ? "Refreshing..." : "Refresh"}
+            </button>
+          </div>
+
+          {savedMatchesError ? (
+            <p className="message error">{savedMatchesError}</p>
+          ) : null}
+
+          {savedMatchesLoading && savedMatches.length === 0 ? (
+            <p className="empty-state">Loading saved matches...</p>
+          ) : savedMatches.length === 0 ? (
+            <p className="empty-state">
+              No saved matches yet. Run a match above to see it appear here.
+            </p>
+          ) : (
+            <ul className="saved-matches-list">
+              {savedMatches.map((match) => (
+                <li className="saved-match-row" key={match.id}>
+                  <div className="saved-match-summary">
+                    <div className="saved-match-score">
+                      <span className="score-label">Final</span>
+                      <strong>{formatScore(match.final_score)}</strong>
+                      <span className="match-badge">
+                        {match.match_level || "Unknown"}
+                      </span>
+                    </div>
+                    <div className="saved-match-meta">
+                      <span className="saved-match-date">
+                        {formatSavedDate(match.created_at)}
+                      </span>
+                      <span className="saved-match-sub">
+                        Semantic {formatScore(match.semantic_score)} ·
+                        Keyword {formatScore(match.keyword_score)}
+                      </span>
+                      <span className="saved-match-sub">
+                        Matched {match.matching_skills?.length || 0} ·
+                        Missing {match.missing_skills?.length || 0}
+                      </span>
+                      {match.short_explanation ? (
+                        <p className="saved-match-explanation">
+                          {match.short_explanation}
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+                  <button
+                    className="saved-match-delete"
+                    type="button"
+                    onClick={() => requestDeleteMatch(match.id)}
+                    disabled={deletingMatchId === match.id}
+                  >
+                    {deletingMatchId === match.id ? "Deleting..." : "Delete"}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       </div>
+
+      {pendingDeleteId !== null ? (
+        <div
+          className="modal-backdrop"
+          role="presentation"
+          onClick={cancelDeleteMatch}
+        >
+          <div
+            className="modal-card"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-match-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <p className="section-label">Confirmation</p>
+            <h3 id="delete-match-title" className="modal-title">
+              Delete saved match?
+            </h3>
+            <p className="modal-body">
+              This will permanently remove this saved match record from the
+              database.
+            </p>
+            <div className="modal-actions">
+              <button
+                className="modal-button modal-button-cancel"
+                type="button"
+                onClick={cancelDeleteMatch}
+                disabled={deletingMatchId !== null}
+              >
+                Cancel
+              </button>
+              <button
+                className="modal-button modal-button-danger"
+                type="button"
+                onClick={confirmDeleteMatch}
+                disabled={deletingMatchId !== null}
+              >
+                {deletingMatchId !== null ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

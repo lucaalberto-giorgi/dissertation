@@ -12,7 +12,11 @@ from openai import OpenAI
 from pypdf import PdfReader
 from pydantic import BaseModel, Field
 
-from db import save_match_record
+from db import (
+    delete_match_record,
+    list_match_records,
+    save_match_record,
+)
 
 
 # Load values from the local .env file.
@@ -59,6 +63,26 @@ class MatchResponse(BaseModel):
     score_interpretation: str
     explanation: ExplanationResponse
     anonymized_cv: str
+
+
+class SavedMatchResponse(BaseModel):
+    """
+    Trimmed representation of a saved match record.
+
+    cv_text and job_description are intentionally excluded from this
+    model: the original CV and job description are never returned to
+    the frontend by the listing endpoint.
+    """
+
+    id: str
+    created_at: str | None = None
+    semantic_score: float | None = None
+    keyword_score: float | None = None
+    final_score: float | None = None
+    match_level: str | None = None
+    matching_skills: list[str] = []
+    missing_skills: list[str] = []
+    short_explanation: str | None = None
 
 
 TECHNICAL_SKILLS = [
@@ -554,3 +578,61 @@ def match_cv_to_job(payload: MatchRequest) -> MatchResponse:
             status_code=502,
             detail=f"OpenAI API request failed: {str(exc)}",
         )
+
+
+@app.get("/matches", response_model=list[SavedMatchResponse])
+def get_saved_matches(limit: int = 50) -> list[SavedMatchResponse]:
+    """
+    Return the most recent saved match records (newest first).
+
+    The response excludes the full CV text and the full job description
+    on purpose, so neither value is exposed to the frontend.
+    """
+    safe_limit = max(1, min(limit, 100))
+    rows = list_match_records(limit=safe_limit)
+
+    saved_matches: list[SavedMatchResponse] = []
+    for row in rows:
+        saved_matches.append(
+            SavedMatchResponse(
+                id=str(row.get("id")) if row.get("id") is not None else "",
+                created_at=(
+                    str(row["created_at"])
+                    if row.get("created_at") is not None
+                    else None
+                ),
+                semantic_score=row.get("semantic_score"),
+                keyword_score=row.get("keyword_score"),
+                final_score=row.get("final_score"),
+                match_level=row.get("match_level"),
+                matching_skills=row.get("matching_skills") or [],
+                missing_skills=row.get("missing_skills") or [],
+                short_explanation=row.get("short_explanation"),
+            )
+        )
+    return saved_matches
+
+
+@app.delete("/matches/{record_id}", status_code=204)
+def delete_saved_match(record_id: str) -> JSONResponse:
+    """
+    Delete a single saved match record by primary key.
+
+    Returns 204 on success, 404 if the record does not exist, and 502
+    if the database operation fails. The /match endpoint is unaffected.
+    """
+    try:
+        was_deleted = delete_match_record(record_id)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Failed to delete match record: {str(exc)}",
+        )
+
+    if not was_deleted:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No match record found with id={record_id}",
+        )
+
+    return JSONResponse(status_code=204, content=None)

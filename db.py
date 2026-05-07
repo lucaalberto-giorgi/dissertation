@@ -36,10 +36,11 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
 # Name of the table that stores match results.
-# Run this once in the Supabase SQL editor to create the table:
+# The live Supabase schema uses a UUID primary key (Supabase default).
+# Equivalent SQL:
 #
 #   create table matches (
-#       id                   bigserial primary key,
+#       id                   uuid primary key default gen_random_uuid(),
 #       created_at           timestamptz default now(),
 #       cv_text              text,
 #       job_description      text,
@@ -113,3 +114,71 @@ def save_match_record(
     print(f"[DB DEBUG] Match record saved successfully — id={inserted_id}")
     print(f"[DB DEBUG] Supabase insert response: {response.data}")
     return inserted_rows[0]
+
+
+# Columns returned to the frontend by GET /matches.
+# Intentionally excludes cv_text and job_description so that the full
+# original CV / job text is never sent back to the browser.
+SAFE_LIST_COLUMNS = (
+    "id, created_at, semantic_score, keyword_score, final_score, "
+    "match_level, matching_skills, missing_skills, short_explanation"
+)
+
+
+def list_match_records(limit: int = 50) -> list[dict]:
+    """
+    Read the most recent match records from the `matches` table.
+
+    Only safe columns are returned (no cv_text, no job_description).
+    Errors are logged and swallowed: the endpoint receives an empty
+    list rather than an exception, so the frontend can still render.
+    """
+    print(f"[DB DEBUG] list_match_records started (limit={limit})")
+    try:
+        response = (
+            supabase.table(MATCHES_TABLE)
+            .select(SAFE_LIST_COLUMNS)
+            .order("created_at", desc=True)
+            .limit(limit)
+            .execute()
+        )
+    except Exception as exc:
+        print(f"[DB DEBUG] Failed to list match records: {exc}")
+        print(f"[DB DEBUG] Full traceback:\n{traceback.format_exc()}")
+        return []
+
+    rows = getattr(response, "data", None) or []
+    print(f"[DB DEBUG] list_match_records returned {len(rows)} rows")
+    return rows
+
+
+def delete_match_record(record_id: str) -> bool:
+    """
+    Delete a single match record by primary key.
+
+    The `id` column is a UUID in Supabase, so the record_id is passed
+    as a string. Returns True if a row was deleted, False if no row
+    matched the id or the database operation failed. Errors are logged
+    and swallowed so the endpoint can convert them into a clean HTTP
+    response.
+    """
+    print(f"[DB DEBUG] delete_match_record started (id={record_id})")
+    try:
+        response = (
+            supabase.table(MATCHES_TABLE)
+            .delete()
+            .eq("id", record_id)
+            .execute()
+        )
+    except Exception as exc:
+        print(f"[DB DEBUG] Failed to delete match record: {exc}")
+        print(f"[DB DEBUG] Full traceback:\n{traceback.format_exc()}")
+        return False
+
+    deleted_rows = getattr(response, "data", None) or []
+    if not deleted_rows:
+        print(f"[DB DEBUG] No match record found with id={record_id}")
+        return False
+
+    print(f"[DB DEBUG] Match record deleted successfully — id={record_id}")
+    return True
