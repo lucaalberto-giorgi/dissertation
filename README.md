@@ -15,6 +15,18 @@ The app accepts a CV and job description, then:
 - computes a final weighted score and match level
 - generates a short explanation with matching and missing skills
 
+## Live Demo
+
+A hosted version of the app is available here:
+
+[https://dissertation-hazel.vercel.app/?utm_source=portfolio](https://dissertation-hazel.vercel.app/?utm_source=portfolio)
+
+> This deployment is for demonstration and testing purposes only. The system is a research prototype and is not intended for real recruitment decision-making.
+
+## Preview
+
+![AI CV Matcher demo screenshot](docs/images/ai-cv-matcher-demo.png)
+
 ## Project structure
 
 ```text
