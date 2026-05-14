@@ -6,6 +6,9 @@ This project is a simple full-stack dissertation demo with:
 - a React + Vite frontend
 - CV-to-job matching using embeddings, keyword overlap, and explanation output
 - optional PDF CV upload with text extraction
+- saved match records using Supabase
+- create, read and delete functionality for saved matches
+- a Match History interface
 
 The app accepts a CV and job description, then:
 
@@ -177,5 +180,5 @@ If no PDF is uploaded, you can continue using the manual CV textarea as before.
 
 - This is an MVP for a dissertation demo, so the anonymization, PDF extraction, and scoring are intentionally simple.
 - PDF extraction works best on standard text-based CV PDFs. Scanned image-only PDFs may not return useful text.
-- No database or authentication is included.
+- The project uses Supabase as a PostgreSQL database to store saved CV–job match records. All database operations are handled through the FastAPI backend; the frontend does not access Supabase directly. Supabase and OpenAI secrets are kept server-side through environment variables.
 - If the OpenAI API fails, the backend returns a `502` error with a short message.
