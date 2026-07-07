@@ -29,7 +29,7 @@ OUTPUT_CSV = PROJECT_ROOT / "data" / "datasets" / "evaluation_results.csv"
 
 BACKEND_URL = "http://127.0.0.1:8000"
 HEALTH_ENDPOINT = f"{BACKEND_URL}/"
-MATCH_ENDPOINT = f"{BACKEND_URL}/match"
+MATCH_ENDPOINT = f"{BACKEND_URL}/api/match"
 
 MAX_RESUMES = 10
 MAX_JOBS = 10

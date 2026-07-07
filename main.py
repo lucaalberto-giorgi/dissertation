@@ -5,10 +5,10 @@ from typing import List
 
 import numpy as np
 from dotenv import load_dotenv
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import APIRouter, FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
-from openai import OpenAI
+from openai import OpenAI, OpenAIError
 from pypdf import PdfReader
 from pydantic import BaseModel, Field
 
@@ -23,14 +23,25 @@ from db import (
 load_dotenv()
 
 
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-EMBEDDING_MODEL = "text-embedding-3-small"
-if not OPENAI_API_KEY:
-    raise RuntimeError("OPENAI_API_KEY is missing. Add it to your .env file.")
+# Embeddings are requested through OpenRouter, which exposes an
+# OpenAI-compatible API. The default model is the same OpenAI embedding
+# model used for the dissertation evaluation runs, so scores stay
+# comparable. Override EMBEDDING_MODEL in the environment to experiment
+# with other models (this changes all scores — re-run the evaluation).
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "openai/text-embedding-3-small")
+if not OPENROUTER_API_KEY:
+    raise RuntimeError("OPENROUTER_API_KEY is missing. Add it to your .env file.")
 
 
-client = OpenAI(api_key=OPENAI_API_KEY)
+client = OpenAI(base_url=OPENROUTER_BASE_URL, api_key=OPENROUTER_API_KEY)
 app = FastAPI(title="CV Job Matcher API")
+
+# All endpoints (except the health check) are registered on this router
+# and mounted under /api so that Vercel can route /api/* to this app
+# while serving the frontend from the same domain.
+router = APIRouter()
 
 app.add_middleware(
     CORSMiddleware,
@@ -186,8 +197,6 @@ def analyze_skill_match(
     cv_skills = extract_skills_from_text(normalized_cv_text)
     required_skills = extract_skills_from_text(normalized_job_text)
 
-    print(f"[SKILL DEBUG] Processed CV text: {normalized_cv_text}")
-    print(f"[SKILL DEBUG] Processed job description: {normalized_job_text}")
     print(f"[SKILL DEBUG] Detected CV skills: {cv_skills}")
     print(f"[SKILL DEBUG] Detected job skills: {required_skills}")
 
@@ -383,7 +392,11 @@ def extract_text_from_pdf_bytes(file_bytes: bytes) -> str:
         if extracted_page_text.strip():
             page_text.append(extracted_page_text.strip())
 
-    extracted_text = normalize_text("\n\n".join(page_text))
+    # Keep the original casing and punctuation: the raw text is shown to
+    # the user in the CV textarea, and the anonymization step in /match
+    # needs intact emails and phone numbers to be able to redact them.
+    # Normalization for scoring happens later, inside /match.
+    extracted_text = "\n\n".join(page_text).strip()
     print(f"[PDF DEBUG] Total extracted text length: {len(extracted_text)}")
 
     if not extracted_text:
@@ -403,7 +416,7 @@ def read_root() -> dict:
     return {"message": "CV Job Matcher API is running"}
 
 
-@app.post("/extract-cv-pdf")
+@router.post("/extract-cv-pdf")
 async def extract_cv_pdf(file: UploadFile = File(...)) -> JSONResponse:
     """
     Accept a PDF CV upload and return the extracted text.
@@ -493,7 +506,7 @@ async def extract_cv_pdf(file: UploadFile = File(...)) -> JSONResponse:
     )
 
 
-@app.post("/match", response_model=MatchResponse)
+@router.post("/match", response_model=MatchResponse)
 def match_cv_to_job(payload: MatchRequest) -> MatchResponse:
     cv_text = payload.cv_text.strip()
     job_description = payload.job_description.strip()
@@ -570,19 +583,16 @@ def match_cv_to_job(payload: MatchRequest) -> MatchResponse:
             explanation=explanation,
             anonymized_cv=anonymized_cv,
         )
-    except json.JSONDecodeError:
+    except OpenAIError as exc:
+        # Only embedding-provider failures map to 502. Anything else is a
+        # genuine server bug and should surface as a 500 with a traceback.
         raise HTTPException(
             status_code=502,
-            detail="The explanation response could not be parsed as JSON.",
-        )
-    except Exception as exc:
-        raise HTTPException(
-            status_code=502,
-            detail=f"OpenAI API request failed: {str(exc)}",
+            detail=f"Embedding request failed: {str(exc)}",
         )
 
 
-@app.get("/matches", response_model=list[SavedMatchResponse])
+@router.get("/matches", response_model=list[SavedMatchResponse])
 def get_saved_matches(limit: int = 50) -> list[SavedMatchResponse]:
     """
     Return the most recent saved match records (newest first).
@@ -615,7 +625,7 @@ def get_saved_matches(limit: int = 50) -> list[SavedMatchResponse]:
     return saved_matches
 
 
-@app.delete("/matches/{record_id}", status_code=204)
+@router.delete("/matches/{record_id}", status_code=204)
 def delete_saved_match(record_id: str) -> Response:
     """
     Delete a single saved match record by primary key.
@@ -643,3 +653,12 @@ def delete_saved_match(record_id: str) -> Response:
     # after the response is sent. A bare Response with no body is the
     # correct shape here.
     return Response(status_code=204)
+
+
+# Canonical mount: the frontend and Vercel's /api/* rewrite use these paths.
+app.include_router(router, prefix="/api")
+
+# Legacy mount: keeps the old unprefixed paths (/match, /matches, ...)
+# working for any cached frontend bundle that still points at the Render
+# backend. Safe to remove once the Render service is retired.
+app.include_router(router)

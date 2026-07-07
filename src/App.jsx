@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+// Empty base URL means same-origin requests: /api/* is served by the
+// Vercel Python function in production and proxied to the local FastAPI
+// server by Vite in development (see vite.config.js). VITE_API_URL stays
+// as an escape hatch for pointing at a separately hosted backend.
+const API_BASE_URL = import.meta.env.VITE_API_URL || "";
 
 function formatSavedDate(rawDate) {
   if (!rawDate) {
@@ -207,7 +210,7 @@ function App() {
     setSavedMatchesError("");
 
     try {
-      const response = await fetch(`${API_BASE_URL}/matches?limit=5`);
+      const response = await fetch(`${API_BASE_URL}/api/matches?limit=5`);
       const data = await response.json();
 
       if (!response.ok) {
@@ -253,7 +256,7 @@ function App() {
     setSavedMatchesError("");
 
     try {
-      const response = await fetch(`${API_BASE_URL}/matches/${matchId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/matches/${matchId}`, {
         method: "DELETE",
       });
 
@@ -346,7 +349,7 @@ function App() {
     setUploadingPdf(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/extract-cv-pdf`, {
+      const response = await fetch(`${API_BASE_URL}/api/extract-cv-pdf`, {
         method: "POST",
         body: formData,
       });
@@ -385,7 +388,7 @@ function App() {
     setResult(initialResult);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/match`, {
+      const response = await fetch(`${API_BASE_URL}/api/match`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
