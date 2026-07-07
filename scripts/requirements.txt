@@ -1,0 +1,5 @@
+# Extra dependencies for the offline evaluation scripts only.
+# The deployed backend does not need these (see ../requirements.txt).
+pandas
+requests
+tqdm

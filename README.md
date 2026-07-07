@@ -13,7 +13,7 @@ This project is a simple full-stack dissertation demo with:
 The app accepts a CV and job description, then:
 
 - anonymizes simple personal details from the CV
-- computes a semantic similarity score using OpenAI embeddings
+- computes a semantic similarity score using embeddings served through OpenRouter (default model: `openai/text-embedding-3-small`)
 - computes a keyword-overlap score
 - computes a final weighted score and match level
 - generates a short explanation with matching and missing skills
@@ -34,11 +34,15 @@ A hosted version of the app is available here:
 
 ```text
 .
-├── main.py
-├── requirements.txt
+├── main.py           # FastAPI app (all endpoints under /api)
+├── db.py             # Supabase helper for saved matches
+├── api/index.py      # Vercel serverless entrypoint (imports main.app)
+├── vercel.json       # Routes /api/* to the Python function
+├── requirements.txt  # Backend dependencies
+├── scripts/          # Offline dataset evaluation (own requirements.txt)
 ├── package.json
 ├── index.html
-├── src/
+├── src/              # React frontend
 ├── .env.example
 └── README.md
 ```
@@ -66,10 +70,12 @@ Copy the example file:
 cp .env.example .env
 ```
 
-Open `.env` and add your OpenAI API key:
+Open `.env` and add your OpenRouter API key (create one at https://openrouter.ai/keys) plus the Supabase credentials:
 
 ```env
-OPENAI_API_KEY=your_real_api_key_here
+OPENROUTER_API_KEY=your_real_api_key_here
+SUPABASE_URL=https://your-project-ref.supabase.co
+SUPABASE_KEY=your_service_role_key
 ```
 
 Do not commit your real `.env` file or API key.
@@ -105,14 +111,14 @@ The frontend will usually run at:
 
 - `http://localhost:5173`
 
-## 5. Test the `/match` endpoint
+## 5. Test the `/api/match` endpoint
 
 You can test it in Swagger UI or with `curl`.
 
 Example request:
 
 ```bash
-curl -X POST "http://127.0.0.1:8000/match" \
+curl -X POST "http://127.0.0.1:8000/api/match" \
   -H "Content-Type: application/json" \
   -d '{
     "cv_text": "Mr John Smith is a Python developer with experience in FastAPI, APIs, NumPy, and machine learning. Email: john@example.com Phone: +44 7700 900123",
@@ -147,12 +153,12 @@ Example response shape:
 
 The backend includes a dedicated PDF extraction endpoint:
 
-- `POST /extract-cv-pdf`
+- `POST /api/extract-cv-pdf`
 
 You can test it in Swagger UI or with `curl`:
 
 ```bash
-curl -X POST "http://127.0.0.1:8000/extract-cv-pdf" \
+curl -X POST "http://127.0.0.1:8000/api/extract-cv-pdf" \
   -F "file=@/absolute/path/to/cv.pdf"
 ```
 
@@ -176,9 +182,26 @@ In the frontend:
 
 If no PDF is uploaded, you can continue using the manual CV textarea as before.
 
+## Deployment
+
+The whole app is deployed as a single Vercel project:
+
+- The Vite frontend is built as static files and served from the site root.
+- The FastAPI backend runs as a Vercel Python serverless function. `vercel.json` rewrites every `/api/*` request to `api/index.py`, which imports the app from `main.py`.
+- Because frontend and API share one domain, no `VITE_API_URL` or CORS configuration is needed in production.
+
+Required environment variables in the Vercel project settings (Production and Preview):
+
+- `OPENROUTER_API_KEY`
+- `SUPABASE_URL`
+- `SUPABASE_KEY`
+
+Every pull request gets a preview deployment with its own working API, so changes can be tested end to end before they reach production.
+
 ## Notes
 
 - This is an MVP for a dissertation demo, so the anonymization, PDF extraction, and scoring are intentionally simple.
 - PDF extraction works best on standard text-based CV PDFs. Scanned image-only PDFs may not return useful text.
-- The project uses Supabase as a PostgreSQL database to store saved CV–job match records. All database operations are handled through the FastAPI backend; the frontend does not access Supabase directly. Supabase and OpenAI secrets are kept server-side through environment variables.
-- If the OpenAI API fails, the backend returns a `502` error with a short message.
+- The project uses Supabase as a PostgreSQL database to store saved CV–job match records. All database operations are handled through the FastAPI backend; the frontend does not access Supabase directly. Supabase and OpenRouter secrets are kept server-side through environment variables.
+- Embeddings are requested through OpenRouter's OpenAI-compatible API. The default model (`openai/text-embedding-3-small`) matches the one used for the dissertation evaluation results; set `EMBEDDING_MODEL` to experiment with other models, but note that all scores change and the evaluation should be re-run.
+- If the embedding request fails, the backend returns a `502` error with a short message.
