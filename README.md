@@ -1,207 +1,90 @@
-# AI CV and Job Matching Dissertation Project
+# AI CV Matcher — The Match Report
 
-This project is a simple full-stack dissertation demo with:
+A full-stack web app that compares a CV against a job description and issues a typeset **match report**: a semantic similarity score, keyword coverage, matched and missing skills, and an explainable verdict — stamped like a real assessment document.
 
-- a FastAPI backend
-- a React + Vite frontend
-- CV-to-job matching using embeddings, keyword overlap, and explanation output
-- optional PDF CV upload with text extraction
-- saved match records using Supabase
-- create, read and delete functionality for saved matches
-- a Match History interface
+## Live demo
 
-The app accepts a CV and job description, then:
+**[dissertation-hazel.vercel.app](https://dissertation-hazel.vercel.app/?utm_source=portfolio)**
 
-- anonymizes simple personal details from the CV
-- computes a semantic similarity score using embeddings served through OpenRouter (default model: `openai/text-embedding-3-small`)
-- computes a keyword-overlap score
-- computes a final weighted score and match level
-- generates a short explanation with matching and missing skills
+Click **Load sample pair → Run the Match** for the two-click tour.
 
-## Live Demo
+![The Match Report — app screenshot](docs/images/ai-cv-matcher-demo.png)
 
-A hosted version of the app is available here:
+> This is a demo and research prototype — not intended for real recruitment decision-making.
 
-[https://dissertation-hazel.vercel.app/?utm_source=portfolio](https://dissertation-hazel.vercel.app/?utm_source=portfolio)
+## What it does
 
-> This deployment is for demonstration and testing purposes only. The system is a research prototype and is not intended for real recruitment decision-making.
+- **Semantic similarity** — CV and job description are embedded with `openai/text-embedding-3-small` (served through OpenRouter) and compared by cosine similarity, calibrated to the model's real working range so unrelated text scores near 0%.
+- **Keyword coverage** — detects technical skills on both sides (with aliases and equivalent-framework groups) and measures how much of the job's requirements the CV covers.
+- **Explainable verdict** — final score (70% semantic + 30% keyword), a Strong/Moderate/Weak stamp, matched and missing skill chips, and a plain-language recommendation. No black box.
+- **PDF CV upload** — extracts text from text-based PDF CVs server-side.
+- **Anonymization** — strips emails, phone numbers, and titles from the CV before scoring.
+- **Session ledger** — every match is persisted to Postgres, but each visitor only ever sees (and can only delete) the matches from their own browser session.
 
-## Preview
+## Tech stack
 
-![AI CV Matcher demo screenshot](docs/images/ai-cv-matcher-demo.png)
+| Layer | Tech |
+|---|---|
+| Frontend | React 18 + Vite, custom editorial design system (Fraunces / Familjen Grotesk / Fragment Mono) |
+| Backend | FastAPI (Python), deployed as a Vercel serverless function |
+| Embeddings | OpenRouter (OpenAI-compatible API) |
+| Database | Supabase (Postgres) |
+| Hosting | A single Vercel project serves both the static frontend and the `/api/*` function |
 
-## Project structure
+### Architecture
 
-```text
-.
-├── main.py           # FastAPI app (all endpoints under /api)
-├── db.py             # Supabase helper for saved matches
-├── api/index.py      # Vercel serverless entrypoint (imports main.app)
-├── vercel.json       # Routes /api/* to the Python function
-├── requirements.txt  # Backend dependencies
-├── scripts/          # Offline dataset evaluation (own requirements.txt)
-├── package.json
-├── index.html
-├── src/              # React frontend
-├── .env.example
-└── README.md
-```
+`vercel.json` rewrites every `/api/*` request to `api/index.py`, which loads the FastAPI app from `main.py`. Frontend and API share one domain, so there is no CORS configuration and no API base URL to manage. Secrets (`OPENROUTER_API_KEY`, `SUPABASE_URL`, `SUPABASE_KEY`) live only in server-side environment variables; the browser never talks to Supabase or OpenRouter directly.
 
-## 1. Backend setup
+## Run it locally
 
-Create and activate a virtual environment if you want:
+Requirements: Python 3.10+, Node 18+.
 
 ```bash
+git clone https://github.com/lucaalberto-giorgi/dissertation.git
+cd dissertation
+
+# 1. Environment
+cp .env.example .env       # then fill in the three values
+
+# 2. Backend (terminal 1)
 python3 -m venv venv
 source venv/bin/activate
-```
-
-Then install the required packages:
-
-```bash
 pip install -r requirements.txt
-```
+uvicorn main:app --reload  # http://127.0.0.1:8000, Swagger at /docs
 
-## 2. Create and use `.env`
-
-Copy the example file:
-
-```bash
-cp .env.example .env
-```
-
-Open `.env` and add your OpenRouter API key (create one at https://openrouter.ai/keys) plus the Supabase credentials:
-
-```env
-OPENROUTER_API_KEY=your_real_api_key_here
-SUPABASE_URL=https://your-project-ref.supabase.co
-SUPABASE_KEY=your_service_role_key
-```
-
-Do not commit your real `.env` file or API key.
-
-## 3. Run the backend
-
-Start the FastAPI app with Uvicorn:
-
-```bash
-uvicorn main:app --reload
-```
-
-The API will be available at:
-
-- `http://127.0.0.1:8000`
-- Swagger docs: `http://127.0.0.1:8000/docs`
-
-## 4. Frontend setup
-
-Install the frontend dependencies:
-
-```bash
+# 3. Frontend (terminal 2)
 npm install
+npm run dev                # http://localhost:5173 — /api proxies to the backend
 ```
 
-Start the React development server:
+## API
 
-```bash
-npm run dev
-```
+| Endpoint | Description |
+|---|---|
+| `POST /api/match` | Score a CV against a job description; returns scores, skills, explanation, and the saved record id |
+| `POST /api/extract-cv-pdf` | Extract text from an uploaded PDF CV |
+| `GET /api/matches` | List recent saved match records (safe columns only — never the raw CV or job text) |
+| `DELETE /api/matches/{id}` | Delete a saved match record |
 
-The frontend will usually run at:
-
-- `http://localhost:5173`
-
-## 5. Test the `/api/match` endpoint
-
-You can test it in Swagger UI or with `curl`.
-
-Example request:
+Example:
 
 ```bash
 curl -X POST "http://127.0.0.1:8000/api/match" \
   -H "Content-Type: application/json" \
   -d '{
-    "cv_text": "Mr John Smith is a Python developer with experience in FastAPI, APIs, NumPy, and machine learning. Email: john@example.com Phone: +44 7700 900123",
-    "job_description": "We are hiring a Python developer with FastAPI experience, strong API design skills, NumPy knowledge, and machine learning exposure."
+    "cv_text": "Python developer with FastAPI, NumPy and machine learning experience.",
+    "job_description": "Hiring a Python developer with FastAPI and NumPy knowledge."
   }'
 ```
 
-Example response shape:
+## How the scoring works
 
-```json
-{
-  "semantic_score": 0.912,
-  "keyword_score": 0.667,
-  "final_score": 0.838,
-  "match_level": "Strong match",
-  "score_interpretation": "The candidate appears to align well with the job because both the overall meaning and the key terms are strongly related.",
-  "explanation": {
-    "matching_skills": [
-      "Python",
-      "FastAPI",
-      "NumPy",
-      "machine learning"
-    ],
-    "missing_skills": [],
-    "short_explanation": "The CV aligns well with the main technical requirements in the job description."
-  },
-  "anonymized_cv": "John Smith is a Python developer with experience in FastAPI, APIs, NumPy, and machine learning. Email: [EMAIL] Phone: [PHONE]"
-}
-```
+1. The CV is anonymized, then both texts are normalized and embedded.
+2. Cosine similarity is rescaled from the embedding model's practical range (~0.2–0.85) onto 0–1 — so gibberish reads as ~0%, not an inflated 50%+.
+3. Skill detection compares required skills from the job against skills found in the CV, tolerating aliases (e.g. "postgres" → PostgreSQL) and equivalent frameworks (e.g. Flask ≈ FastAPI).
+4. Final score = 70% semantic + 30% keyword, with a small bonus only when the job's detected requirements are fully covered.
+5. Thresholds: **Strong ≥ 70%**, **Moderate ≥ 45%**, otherwise **Weak** — and a match with zero overlapping skills is always Weak, regardless of score.
 
-## 6. Test PDF CV upload
+## Project origin
 
-The backend includes a dedicated PDF extraction endpoint:
-
-- `POST /api/extract-cv-pdf`
-
-You can test it in Swagger UI or with `curl`:
-
-```bash
-curl -X POST "http://127.0.0.1:8000/api/extract-cv-pdf" \
-  -F "file=@/absolute/path/to/cv.pdf"
-```
-
-Example response shape:
-
-```json
-{
-  "extracted_text": "Extracted CV text goes here...",
-  "filename": "cv.pdf"
-}
-```
-
-In the frontend:
-
-1. Open `http://localhost:5173`
-2. Upload a PDF CV using the file input
-3. Wait for the success message
-4. Confirm that the extracted text appears in the CV textarea
-5. Add a job description
-6. Click `Match`
-
-If no PDF is uploaded, you can continue using the manual CV textarea as before.
-
-## Deployment
-
-The whole app is deployed as a single Vercel project:
-
-- The Vite frontend is built as static files and served from the site root.
-- The FastAPI backend runs as a Vercel Python serverless function. `vercel.json` rewrites every `/api/*` request to `api/index.py`, which imports the app from `main.py`.
-- Because frontend and API share one domain, no `VITE_API_URL` or CORS configuration is needed in production.
-
-Required environment variables in the Vercel project settings (Production and Preview):
-
-- `OPENROUTER_API_KEY`
-- `SUPABASE_URL`
-- `SUPABASE_KEY`
-
-Every pull request gets a preview deployment with its own working API, so changes can be tested end to end before they reach production.
-
-## Notes
-
-- This is an MVP for a dissertation demo, so the anonymization, PDF extraction, and scoring are intentionally simple.
-- PDF extraction works best on standard text-based CV PDFs. Scanned image-only PDFs may not return useful text.
-- The project uses Supabase as a PostgreSQL database to store saved CV–job match records. All database operations are handled through the FastAPI backend; the frontend does not access Supabase directly. Supabase and OpenRouter secrets are kept server-side through environment variables.
-- Embeddings are requested through OpenRouter's OpenAI-compatible API. The default model (`openai/text-embedding-3-small`) matches the one used for the dissertation evaluation results; set `EMBEDDING_MODEL` to experiment with other models, but note that all scores change and the evaluation should be re-run.
-- If the embedding request fails, the backend returns a `502` error with a short message.
+Built originally as an MSc dissertation project on explainable CV–job matching, then reworked into the portfolio piece you see today: redesigned UI, recalibrated scoring, and a serverless deployment. The `scripts/` folder still contains the dataset-evaluation tooling from the research phase.
