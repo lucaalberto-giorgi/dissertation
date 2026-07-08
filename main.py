@@ -58,8 +58,12 @@ app.add_middleware(
 
 
 class MatchRequest(BaseModel):
-    cv_text: str = Field(..., description="Raw CV text")
-    job_description: str = Field(..., description="Raw job description text")
+    # max_length keeps a single request from burning embedding credit on
+    # megabyte payloads; 20k characters is far beyond any real CV.
+    cv_text: str = Field(..., max_length=20_000, description="Raw CV text")
+    job_description: str = Field(
+        ..., max_length=20_000, description="Raw job description text"
+    )
 
 
 class ExplanationResponse(BaseModel):
@@ -76,6 +80,11 @@ class MatchResponse(BaseModel):
     score_interpretation: str
     explanation: ExplanationResponse
     anonymized_cv: str
+    # Identifies the saved record so the frontend can show this run in
+    # the visitor's own session ledger (and delete it). None when the
+    # database was unavailable — the match still works without it.
+    record_id: str | None = None
+    created_at: str | None = None
 
 
 class SavedMatchResponse(BaseModel):
@@ -275,12 +284,23 @@ def cosine_similarity(vector_a: List[float], vector_b: List[float]) -> float:
     return round(similarity, 3)
 
 
+# In practice, cosine similarities from text embeddings land roughly
+# between 0.2 (unrelated texts) and 0.85 (nearly identical meaning) —
+# they never approach -1. Rescaling that working range onto 0..1 makes
+# the displayed score honest: gibberish reads near 0%, strong overlap
+# reads near 100%.
+SIMILARITY_FLOOR = 0.2
+SIMILARITY_CEILING = 0.85
+
+
 def calibrate_semantic_score(raw_similarity: float) -> float:
     """
-    Normalize cosine similarity from the standard -1 to 1 range into
-    a 0 to 1 range using a simple dissertation-friendly formula.
+    Map raw cosine similarity onto a 0..1 score using the observed
+    working range of the embedding model, clamped at both ends.
     """
-    calibrated_score = (raw_similarity + 1) / 2
+    calibrated_score = (raw_similarity - SIMILARITY_FLOOR) / (
+        SIMILARITY_CEILING - SIMILARITY_FLOOR
+    )
     calibrated_score = max(0.0, min(calibrated_score, 1.0))
     return round(calibrated_score, 3)
 
@@ -289,22 +309,27 @@ def calculate_final_score(
     semantic_score: float,
     keyword_score: float,
     missing_skills: list[str],
+    required_skills: list[str],
 ) -> float:
     """
     Combine the two scores using a simple weighted average.
     Semantic similarity has a higher weight because it captures the
     overall meaning of the CV and job description.
-    A small bonus is added when no missing skills are identified.
-    If no missing skills are detected, the final score should still
-    reflect a strong match in a simple and explainable way.
+
+    A small bonus and a 0.75 floor apply only when the job description
+    asked for recognizable skills AND the CV covered all of them. If no
+    required skills were detected at all, full coverage is meaningless,
+    so neither the bonus nor the floor applies — otherwise unrelated
+    text would be guaranteed a 75% score.
     """
-    no_missing_skills_bonus = 0.05 if not missing_skills else 0.0
+    full_coverage = bool(required_skills) and not missing_skills
+    no_missing_skills_bonus = 0.05 if full_coverage else 0.0
     final_score = (
         (semantic_score * 0.7)
         + (keyword_score * 0.3)
         + no_missing_skills_bonus
     )
-    if not missing_skills:
+    if full_coverage:
         final_score = max(final_score, 0.75)
     final_score = min(final_score, 1.0)
     return round(final_score, 3)
@@ -318,9 +343,9 @@ def get_match_level(final_score: float, matching_skills: list[str]) -> str:
     if not matching_skills:
         return "Weak match"
 
-    if final_score >= 0.75:
+    if final_score >= 0.7:
         return "Strong match"
-    if final_score >= 0.6:
+    if final_score >= 0.45:
         return "Moderate match"
     return "Weak match"
 
@@ -330,12 +355,12 @@ def get_score_interpretation(final_score: float) -> str:
     Provide a short interpretation of the final score.
     This keeps the scoring logic transparent and beginner-friendly.
     """
-    if final_score >= 0.75:
+    if final_score >= 0.7:
         return (
             "The candidate appears to align well with the job because both "
             "the overall meaning and the key terms are strongly related."
         )
-    if final_score >= 0.5:
+    if final_score >= 0.45:
         return (
             "The candidate shows partial alignment with the job, but there "
             "are some important gaps in skills or experience."
@@ -549,6 +574,7 @@ def match_cv_to_job(payload: MatchRequest) -> MatchResponse:
             semantic_score,
             keyword_score,
             explanation.missing_skills,
+            required_skills,
         )
         match_level = get_match_level(
             final_score,
@@ -559,8 +585,7 @@ def match_cv_to_job(payload: MatchRequest) -> MatchResponse:
         # Persist the match result. save_match_record swallows its own
         # errors and returns None on failure, so the response below is
         # always returned even if the database is unavailable.
-        print("[DB DEBUG] Calling save_match_record")
-        save_match_record(
+        saved_record = save_match_record(
             cv_text=cv_text,
             job_description=job_description,
             anonymized_cv=anonymized_cv,
@@ -573,6 +598,16 @@ def match_cv_to_job(payload: MatchRequest) -> MatchResponse:
             missing_skills=explanation.missing_skills,
             short_explanation=explanation.short_explanation,
         )
+        record_id = (
+            str(saved_record["id"])
+            if saved_record and saved_record.get("id") is not None
+            else None
+        )
+        created_at = (
+            str(saved_record["created_at"])
+            if saved_record and saved_record.get("created_at")
+            else None
+        )
 
         return MatchResponse(
             semantic_score=semantic_score,
@@ -582,6 +617,8 @@ def match_cv_to_job(payload: MatchRequest) -> MatchResponse:
             score_interpretation=score_interpretation,
             explanation=explanation,
             anonymized_cv=anonymized_cv,
+            record_id=record_id,
+            created_at=created_at,
         )
     except OpenAIError as exc:
         # Only embedding-provider failures map to 502. Anything else is a
