@@ -19,7 +19,7 @@ Click **Load sample pair → Run the Match** for the two-click tour.
 - **Explainable verdict** — final score (70% semantic + 30% keyword), a Strong/Moderate/Weak stamp, matched and missing skill chips, and a plain-language recommendation. No black box.
 - **PDF CV upload** — extracts text from text-based PDF CVs server-side.
 - **Anonymization** — strips emails, phone numbers, and titles from the CV before scoring.
-- **Session ledger** — every match is persisted to Postgres, but each visitor only ever sees (and can only delete) the matches from their own browser session.
+- **Session ledger** — every match you run is kept in your own browser session so you can compare runs side by side. Nothing is stored server-side.
 
 ## Tech stack
 
@@ -28,12 +28,11 @@ Click **Load sample pair → Run the Match** for the two-click tour.
 | Frontend | React 18 + Vite, custom editorial design system (Fraunces / Familjen Grotesk / Fragment Mono) |
 | Backend | FastAPI (Python), deployed as a Vercel serverless function |
 | Embeddings | OpenRouter (OpenAI-compatible API) |
-| Database | Supabase (Postgres) |
 | Hosting | A single Vercel project serves both the static frontend and the `/api/*` function |
 
 ### Architecture
 
-`vercel.json` rewrites every `/api/*` request to `api/index.py`, which loads the FastAPI app from `main.py`. Frontend and API share one domain, so there is no CORS configuration and no API base URL to manage. Secrets (`OPENROUTER_API_KEY`, `SUPABASE_URL`, `SUPABASE_KEY`) live only in server-side environment variables; the browser never talks to Supabase or OpenRouter directly.
+`vercel.json` rewrites every `/api/*` request to `api/index.py`, which loads the FastAPI app from `main.py`. Frontend and API share one domain, so there is no CORS configuration and no API base URL to manage. The only secret (`OPENROUTER_API_KEY`) lives in a server-side environment variable; the browser never talks to OpenRouter directly. The app has no database: the API is stateless, and the match ledger lives in the visitor's `sessionStorage`.
 
 ## Run it locally
 
@@ -44,7 +43,7 @@ git clone https://github.com/lucaalberto-giorgi/dissertation.git
 cd dissertation
 
 # 1. Environment
-cp .env.example .env       # then fill in the three values
+cp .env.example .env       # then add your OpenRouter key
 
 # 2. Backend (terminal 1)
 python3 -m venv venv
@@ -61,10 +60,8 @@ npm run dev                # http://localhost:5173 — /api proxies to the backe
 
 | Endpoint | Description |
 |---|---|
-| `POST /api/match` | Score a CV against a job description; returns scores, skills, explanation, and the saved record id |
+| `POST /api/match` | Score a CV against a job description; returns scores, skills, and explanation |
 | `POST /api/extract-cv-pdf` | Extract text from an uploaded PDF CV |
-| `GET /api/matches` | List recent saved match records (safe columns only — never the raw CV or job text) |
-| `DELETE /api/matches/{id}` | Delete a saved match record |
 
 Example:
 

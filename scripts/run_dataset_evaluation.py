@@ -2,10 +2,9 @@
 Dataset evaluation script for the CV / Job Matching dissertation project.
 
 Reads two Kaggle CSVs (resumes + jobs), takes a small sample of each, and
-calls the local FastAPI /match endpoint for every (CV, job) pair. The
-endpoint already persists each result to Supabase, so this script does
-NOT write to Supabase directly. It only collects the responses, prints a
-useful per-pair summary, and saves a local CSV for dissertation evidence.
+calls the local FastAPI /match endpoint for every (CV, job) pair. It
+collects the responses, prints a useful per-pair summary, and saves a
+local CSV for dissertation evidence.
 
 Run from the project root:
     source venv/bin/activate
