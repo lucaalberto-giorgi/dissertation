@@ -7,16 +7,10 @@ import numpy as np
 from dotenv import load_dotenv
 from fastapi import APIRouter, FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import JSONResponse
 from openai import OpenAI, OpenAIError
 from pypdf import PdfReader
 from pydantic import BaseModel, Field
-
-from db import (
-    delete_match_record,
-    list_match_records,
-    save_match_record,
-)
 
 
 # Load values from the local .env file.
@@ -80,31 +74,6 @@ class MatchResponse(BaseModel):
     score_interpretation: str
     explanation: ExplanationResponse
     anonymized_cv: str
-    # Identifies the saved record so the frontend can show this run in
-    # the visitor's own session ledger (and delete it). None when the
-    # database was unavailable — the match still works without it.
-    record_id: str | None = None
-    created_at: str | None = None
-
-
-class SavedMatchResponse(BaseModel):
-    """
-    Trimmed representation of a saved match record.
-
-    cv_text and job_description are intentionally excluded from this
-    model: the original CV and job description are never returned to
-    the frontend by the listing endpoint.
-    """
-
-    id: str
-    created_at: str | None = None
-    semantic_score: float | None = None
-    keyword_score: float | None = None
-    final_score: float | None = None
-    match_level: str | None = None
-    matching_skills: list[str] = []
-    missing_skills: list[str] = []
-    short_explanation: str | None = None
 
 
 TECHNICAL_SKILLS = [
@@ -582,33 +551,6 @@ def match_cv_to_job(payload: MatchRequest) -> MatchResponse:
         )
         score_interpretation = get_score_interpretation(final_score)
 
-        # Persist the match result. save_match_record swallows its own
-        # errors and returns None on failure, so the response below is
-        # always returned even if the database is unavailable.
-        saved_record = save_match_record(
-            cv_text=cv_text,
-            job_description=job_description,
-            anonymized_cv=anonymized_cv,
-            semantic_score=semantic_score,
-            keyword_score=keyword_score,
-            final_score=final_score,
-            match_level=match_level,
-            score_interpretation=score_interpretation,
-            matching_skills=explanation.matching_skills,
-            missing_skills=explanation.missing_skills,
-            short_explanation=explanation.short_explanation,
-        )
-        record_id = (
-            str(saved_record["id"])
-            if saved_record and saved_record.get("id") is not None
-            else None
-        )
-        created_at = (
-            str(saved_record["created_at"])
-            if saved_record and saved_record.get("created_at")
-            else None
-        )
-
         return MatchResponse(
             semantic_score=semantic_score,
             keyword_score=keyword_score,
@@ -617,8 +559,6 @@ def match_cv_to_job(payload: MatchRequest) -> MatchResponse:
             score_interpretation=score_interpretation,
             explanation=explanation,
             anonymized_cv=anonymized_cv,
-            record_id=record_id,
-            created_at=created_at,
         )
     except OpenAIError as exc:
         # Only embedding-provider failures map to 502. Anything else is a
@@ -629,73 +569,10 @@ def match_cv_to_job(payload: MatchRequest) -> MatchResponse:
         )
 
 
-@router.get("/matches", response_model=list[SavedMatchResponse])
-def get_saved_matches(limit: int = 50) -> list[SavedMatchResponse]:
-    """
-    Return the most recent saved match records (newest first).
-
-    The response excludes the full CV text and the full job description
-    on purpose, so neither value is exposed to the frontend.
-    """
-    safe_limit = max(1, min(limit, 100))
-    rows = list_match_records(limit=safe_limit)
-
-    saved_matches: list[SavedMatchResponse] = []
-    for row in rows:
-        saved_matches.append(
-            SavedMatchResponse(
-                id=str(row.get("id")) if row.get("id") is not None else "",
-                created_at=(
-                    str(row["created_at"])
-                    if row.get("created_at") is not None
-                    else None
-                ),
-                semantic_score=row.get("semantic_score"),
-                keyword_score=row.get("keyword_score"),
-                final_score=row.get("final_score"),
-                match_level=row.get("match_level"),
-                matching_skills=row.get("matching_skills") or [],
-                missing_skills=row.get("missing_skills") or [],
-                short_explanation=row.get("short_explanation"),
-            )
-        )
-    return saved_matches
-
-
-@router.delete("/matches/{record_id}", status_code=204)
-def delete_saved_match(record_id: str) -> Response:
-    """
-    Delete a single saved match record by primary key.
-
-    Returns 204 on success, 404 if the record does not exist, and 502
-    if the database operation fails. The /match endpoint is unaffected.
-    """
-    try:
-        was_deleted = delete_match_record(record_id)
-    except Exception as exc:
-        raise HTTPException(
-            status_code=502,
-            detail=f"Failed to delete match record: {str(exc)}",
-        )
-
-    if not was_deleted:
-        raise HTTPException(
-            status_code=404,
-            detail=f"No match record found with id={record_id}",
-        )
-
-    # 204 No Content must have an empty body. JSONResponse(content=None)
-    # serializes to the 4-byte literal "null", which violates RFC 7230
-    # for 204 responses and causes Starlette to log an ASGI exception
-    # after the response is sent. A bare Response with no body is the
-    # correct shape here.
-    return Response(status_code=204)
-
-
 # Canonical mount: the frontend and Vercel's /api/* rewrite use these paths.
 app.include_router(router, prefix="/api")
 
-# Legacy mount: keeps the old unprefixed paths (/match, /matches, ...)
+# Legacy mount: keeps the old unprefixed paths (/match, /extract-cv-pdf)
 # working for any cached frontend bundle that still points at the Render
 # backend. Safe to remove once the Render service is retired.
 app.include_router(router)

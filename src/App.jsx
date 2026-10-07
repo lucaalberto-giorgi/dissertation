@@ -246,9 +246,9 @@ function App() {
   const [uploadingPdf, setUploadingPdf] = useState(false);
   const [cvPreviewMode, setCvPreviewMode] = useState(false);
   const [jobPreviewMode, setJobPreviewMode] = useState(false);
-  // The ledger only shows matches run in THIS visitor's session — the
-  // database keeps everything server-side, but nobody sees (or can
-  // delete) anyone else's runs. sessionStorage survives a page refresh.
+  // The ledger only lives in this visitor's browser — nothing is stored
+  // server-side, so nobody sees anyone else's runs. sessionStorage
+  // survives a page refresh.
   const [sessionMatches, setSessionMatches] = useState(() => {
     try {
       return JSON.parse(sessionStorage.getItem("sessionMatches") || "[]");
@@ -256,8 +256,6 @@ function App() {
       return [];
     }
   });
-  const [ledgerError, setLedgerError] = useState("");
-  const [deletingMatchId, setDeletingMatchId] = useState(null);
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
   const reportRef = useRef(null);
 
@@ -282,50 +280,19 @@ function App() {
   }
 
   function cancelDeleteMatch() {
-    if (deletingMatchId !== null) {
-      return;
-    }
     setPendingDeleteId(null);
   }
 
-  async function confirmDeleteMatch() {
+  function confirmDeleteMatch() {
     const matchId = pendingDeleteId;
     if (matchId === null || matchId === undefined || matchId === "") {
       return;
     }
 
-    setDeletingMatchId(matchId);
-    setLedgerError("");
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/matches/${matchId}`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok && response.status !== 204) {
-        let detailMessage = "Failed to delete the saved match.";
-        try {
-          const errorData = await response.json();
-          if (errorData?.detail) {
-            detailMessage = errorData.detail;
-          }
-        } catch (parseError) {
-          // Response had no JSON body; keep default detailMessage.
-        }
-        throw new Error(detailMessage);
-      }
-
-      setSessionMatches((current) =>
-        current.filter((match) => match.id !== matchId)
-      );
-      setPendingDeleteId(null);
-    } catch (deleteError) {
-      setLedgerError(
-        deleteError.message || "Failed to delete the saved match."
-      );
-    } finally {
-      setDeletingMatchId(null);
-    }
+    setSessionMatches((current) =>
+      current.filter((match) => match.id !== matchId)
+    );
+    setPendingDeleteId(null);
   }
 
   useEffect(() => {
@@ -334,14 +301,14 @@ function App() {
     }
 
     function handleKeyDown(event) {
-      if (event.key === "Escape" && deletingMatchId === null) {
+      if (event.key === "Escape") {
         setPendingDeleteId(null);
       }
     }
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [pendingDeleteId, deletingMatchId]);
+  }, [pendingDeleteId]);
 
   function handleCvTextChange(event) {
     setCvText(event.target.value);
@@ -475,8 +442,8 @@ function App() {
       setResult(data);
       setSessionMatches((current) => [
         {
-          id: data.record_id,
-          created_at: data.created_at || new Date().toISOString(),
+          id: crypto.randomUUID(),
+          created_at: new Date().toISOString(),
           semantic_score: data.semantic_score,
           keyword_score: data.keyword_score,
           final_score: data.final_score,
@@ -826,8 +793,6 @@ function App() {
               </div>
             </div>
 
-            {ledgerError ? <p className="msg msg-error">{ledgerError}</p> : null}
-
             {sessionMatches.length === 0 ? (
               <p className="empty-note">
                 Nothing on file yet — run a match above and it will appear
@@ -870,11 +835,8 @@ function App() {
                         className="saved-delete"
                         type="button"
                         onClick={() => requestDeleteMatch(match.id)}
-                        disabled={deletingMatchId === match.id}
                       >
-                        {deletingMatchId === match.id
-                          ? "Deleting..."
-                          : "Delete"}
+                        Delete
                       </button>
                     ) : null}
                   </li>
@@ -907,15 +869,13 @@ function App() {
               Strike this record?
             </h3>
             <p className="modal-body">
-              This will permanently remove the saved match record from the
-              ledger.
+              This will remove the match from your ledger.
             </p>
             <div className="modal-actions">
               <button
                 className="btn-ghost"
                 type="button"
                 onClick={cancelDeleteMatch}
-                disabled={deletingMatchId !== null}
               >
                 Cancel
               </button>
@@ -923,9 +883,8 @@ function App() {
                 className="btn-danger"
                 type="button"
                 onClick={confirmDeleteMatch}
-                disabled={deletingMatchId !== null}
               >
-                {deletingMatchId !== null ? "Deleting..." : "Delete"}
+                Delete
               </button>
             </div>
           </div>
